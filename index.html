@@ -5,10 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Carte interactive des communes</title>
   <style>
+    body {
+      background-color: white; /* Ensure a simple white background for the whole page */
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+    }
+
     /* General container styling for layout */
     #container {
       display: flex;
-      flex-direction: row;
+      flex-direction: row; /* Default: side-by-side for wider screens */
       gap: 20px;
       max-width: 1000px; /* Limits overall width on larger screens */
       margin: auto; /* Centers the container */
@@ -18,14 +25,14 @@
     /* Responsive adjustments for screens up to 768px wide (e.g., smartphones) */
     @media (max-width: 768px) {
       #container {
-        flex-direction: column; /* Stacks map and info vertically */
+        flex-direction: column; /* Stacks map and info vertically on small screens */
         width: 100%; /* Ensure container takes full width on small screens */
         padding: 10px; /* Adjust padding for smaller screens to minimize empty space */
         box-sizing: border-box; /* Include padding in the element's total width and height */
       }
 
       #map {
-        width: 100%; /* Map container takes full width */
+        width: 100%; /* Map container takes full width on small screens */
       }
 
       /* Ensure the SVG inside the map container scales correctly */
@@ -35,8 +42,8 @@
       }
 
       #info {
-        width: 100%; /* Info section takes full width */
-        margin-top: 20px; /* Adds space above info section */
+        width: 100%; /* Info section takes full width on small screens */
+        margin-top: 20px; /* Adds space above info section when stacked */
       }
     }
 
@@ -62,11 +69,11 @@
     /* Styling for the information display section */
     #info {
       flex: 1; /* Allows info section to grow and shrink */
-      border: 1px solid #ccc; /* Border for the info box */
       padding: 10px; /* Padding inside the info box */
-      background: #f7f7f7; /* Background color for the info box */
-      font-family: sans-serif; /* Font style */
-      border-radius: 8px; /* Slightly rounded corners for aesthetics */
+      background-color: white; /* Simple white background */
+      display: flex; /* Use flexbox for internal layout */
+      flex-direction: column; /* Stack content vertically */
+      gap: 10px; /* Space between elements */
     }
 
     /* Styling for headings within the info box */
@@ -104,10 +111,56 @@
       z-index: 1000; /* Ensures the tooltip appears above other elements */
       white-space: nowrap; /* Prevents text from wrapping */
     }
+
+    /* Styling for LLM buttons */
+    .llm-button {
+      background-color: #6b8a2b; /* Green background */
+      color: white; /* White text */
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+      margin-top: 10px; /* Space above the buttons */
+    }
+
+    .llm-button:hover {
+      background-color: #5a7325; /* Darker green on hover */
+    }
+
+    /* Styling for LLM response area */
+    #llm-response {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px dashed #a3c94f;
+      background-color: #e6ffe6;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #333;
+      min-height: 50px; /* Ensure it's visible even when empty */
+      display: flex;
+      align-items: center; /* Vertically center content */
+      justify-content: center; /* Horizontally center content */
+      text-align: center;
+    }
+
+    .loading-spinner {
+      border: 4px solid #f3f3f3; /* Light grey */
+      border-top: 4px solid #6b8a2b; /* Green */
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <h1 style="text-align:center;">Communes de la CdC des Sources de l'Orne</h1>
   <div id="container">
     <div id="map">
       <svg id="Calque_1" data-name="Calque 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 730.825 622.481">
@@ -145,8 +198,16 @@
       </svg>
     </div>
     <div id="info">
-      <h2>Commune</h2>
-      <p>Survolez a commune then click on it to display its information.</p>
+      <div id="commune-details">
+        <h2>Commune</h2>
+        <p>Survolez a commune then click on it to display its information.</p>
+      </div>
+      <div id="llm-buttons" style="display: none;">
+        <button id="generate-description" class="llm-button">✨ Generate Description</button>
+        <button id="get-fun-fact" class="llm-button">✨ Get a Fun Fact</button>
+      </div>
+      <div id="llm-response">
+        </div>
     </div>
   </div>
   <script>
@@ -295,7 +356,84 @@
 
     const paths = document.querySelectorAll("svg path");
     const infoDiv = document.getElementById("info");
+    const communeDetailsDiv = document.getElementById("commune-details");
+    const llmButtonsDiv = document.getElementById("llm-buttons");
+    const llmResponseDiv = document.getElementById("llm-response");
     let tooltipDiv = null; // Variable to hold the tooltip element
+    let currentCommuneName = ""; // To store the name of the currently selected commune
+
+    // Function to show loading spinner
+    function showLoading() {
+      llmResponseDiv.innerHTML = '<div class="loading-spinner"></div>';
+    }
+
+    // Function to hide loading spinner and display text
+    function hideLoading(text) {
+      llmResponseDiv.textContent = text;
+    }
+
+    // Function to call Gemini API
+    async function callGeminiAPI(prompt) {
+      showLoading();
+      try {
+        let chatHistory = [];
+        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+        const payload = { contents: chatHistory };
+        const apiKey = ""; // Leave this as-is; Canvas will provide the API key
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.candidates && result.candidates.length > 0 &&
+            result.candidates[0].content && result.candidates[0].content.parts &&
+            result.candidates[0].content.parts.length > 0) {
+          const text = result.candidates[0].content.parts[0].text;
+          hideLoading(text);
+        } else {
+          hideLoading("No response from LLM.");
+          console.error("Unexpected LLM response structure:", result);
+        }
+      } catch (error) {
+        hideLoading("Error generating response.");
+        console.error("Error calling Gemini API:", error);
+      }
+    }
+
+    // Event listeners for LLM buttons (defined once, outside the click loop)
+    document.addEventListener('DOMContentLoaded', () => {
+      // These buttons might not exist initially, so add listeners only when they are created
+      // or ensure they are part of the initial HTML and just hidden.
+      // For this setup, they are part of the initial HTML, but hidden.
+      // We'll re-attach listeners if the innerHTML of communeDetailsDiv is completely overwritten.
+      // A better approach is to not overwrite the whole infoDiv, but update parts.
+      // Let's ensure the buttons are always present but hidden.
+      llmButtonsDiv.style.display = 'none'; // Initially hide LLM buttons
+
+      // Attach event listeners for LLM buttons
+      document.getElementById('generate-description').addEventListener('click', () => {
+        if (currentCommuneName) {
+          const prompt = `Write a short, engaging description for ${currentCommuneName}, a commune in Normandy, France, including its key characteristics, history, or unique aspects. Keep it concise, around 2-3 sentences.`;
+          callGeminiAPI(prompt);
+        } else {
+          hideLoading("Please select a commune first.");
+        }
+      });
+
+      document.getElementById('get-fun-fact').addEventListener('click', () => {
+        if (currentCommuneName) {
+          const prompt = `Provide a single, interesting, and concise fun fact about ${currentCommuneName} in Normandy, France. If no specific fact is known, provide a general fun fact about a small commune in rural France.`;
+          callGeminiAPI(prompt);
+        } else {
+          hideLoading("Please select a commune first.");
+        }
+      });
+    });
+
 
     paths.forEach(path => {
       // Mouseover event to show tooltip
@@ -328,26 +466,35 @@
         }
       });
 
-      // Mouseout event to hide and remove tooltip
+      // Mouseout event to hide tooltip
       path.addEventListener("mouseout", () => {
         if (tooltipDiv) {
           tooltipDiv.style.display = "none"; // Hide the tooltip
         }
       });
 
-      // Click event to display commune information (existing functionality)
+      // Click event to display commune information and LLM buttons
       path.addEventListener("click", () => {
         const id = path.id;
         const commune = data[id];
+        llmResponseDiv.textContent = ""; // Clear previous LLM response
+
         if (commune) {
-          infoDiv.innerHTML = `
+          currentCommuneName = commune.nom; // Store the current commune name
+          communeDetailsDiv.innerHTML = `
             <h2>${commune.nom}</h2>
             <p><strong>Population :</strong> ${commune.population}</p>
             <p><strong>Maire :</strong> ${commune.maire}</p>
             <p><a href="${commune.site}" target="_blank">Voir la page de la commune</a></p>
           `;
+          llmButtonsDiv.style.display = 'block'; // Show LLM buttons
         } else {
-          infoDiv.innerHTML = `<h2>${id}</h2><p>Informations à venir...</p>`;
+          currentCommuneName = ""; // Clear commune name if no data
+          communeDetailsDiv.innerHTML = `
+            <h2>${id}</h2>
+            <p>Informations à venir...</p>
+          `;
+          llmButtonsDiv.style.display = 'none'; // Hide LLM buttons
         }
       });
     });
