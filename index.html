@@ -90,6 +90,20 @@
     #info a:hover {
       text-decoration: underline; /* Underline on hover */
     }
+
+    /* Styles for the custom tooltip */
+    .commune-tooltip {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-family: sans-serif;
+      font-size: 14px;
+      pointer-events: none; /* Ensures the tooltip doesn't interfere with mouse events on the map */
+      z-index: 1000; /* Ensures the tooltip appears above other elements */
+      white-space: nowrap; /* Prevents text from wrapping */
+    }
   </style>
 </head>
 <body>
@@ -281,8 +295,47 @@
 
     const paths = document.querySelectorAll("svg path");
     const infoDiv = document.getElementById("info");
+    let tooltipDiv = null; // Variable to hold the tooltip element
 
     paths.forEach(path => {
+      // Mouseover event to show tooltip
+      path.addEventListener("mouseover", (event) => {
+        const id = path.id;
+        const communeName = data[id] ? data[id].nom : path.getAttribute('title'); // Get name from data or title attribute
+
+        if (communeName) {
+          // Create tooltip div if it doesn't exist
+          if (!tooltipDiv) {
+            tooltipDiv = document.createElement("div");
+            tooltipDiv.classList.add("commune-tooltip");
+            document.body.appendChild(tooltipDiv);
+          }
+
+          // Set tooltip text and position
+          tooltipDiv.textContent = communeName;
+          // Position the tooltip near the cursor, with a small offset
+          tooltipDiv.style.left = `${event.clientX + 15}px`;
+          tooltipDiv.style.top = `${event.clientY + 15}px`;
+          tooltipDiv.style.display = "block"; // Make it visible
+        }
+      });
+
+      // Mousemove event to update tooltip position
+      path.addEventListener("mousemove", (event) => {
+        if (tooltipDiv) {
+          tooltipDiv.style.left = `${event.clientX + 15}px`;
+          tooltipDiv.style.top = `${event.clientY + 15}px`;
+        }
+      });
+
+      // Mouseout event to hide and remove tooltip
+      path.addEventListener("mouseout", () => {
+        if (tooltipDiv) {
+          tooltipDiv.style.display = "none"; // Hide the tooltip
+        }
+      });
+
+      // Click event to display commune information (existing functionality)
       path.addEventListener("click", () => {
         const id = path.id;
         const commune = data[id];
