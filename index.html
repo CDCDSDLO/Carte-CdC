@@ -169,7 +169,7 @@ document.querySelectorAll("path").forEach(path => {
             <p class="subtitle">${commune.population} habitants</p>
             <img src="${commune.image}" alt="Photo de ${commune.nom}">
             <br>
-            <button onclick="window.location.href='${commune.page}'">découvrir la commune</button>
+            <button onclick="window.top.location.href='${commune.page}'">découvrir la commune</button>
         `;
     });
 });
