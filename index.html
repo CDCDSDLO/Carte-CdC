@@ -14,11 +14,15 @@
       color: #333;
     }
     #map-container {
+  flex: 2;
+
       flex: 1;
       min-width: 320px;
       padding: 10px;
     }
     #info-container {
+  flex: 1;
+
       flex: 1;
       min-width: 300px;
       padding: 20px;
@@ -45,7 +49,7 @@
     #info-container img {
       max-width: 300px;
       display: block;
-      margin-top: 10px;
+      margin-top: 2px;
     }
     .btn {
       background-color: #6b8a2b;
@@ -53,7 +57,7 @@
       padding: 10px 15px;
       text-decoration: none;
       display: inline-block;
-      margin-top: 10px;
+      margin-top: 2px;
       border-radius: 5px;
     }
     .btn:hover {
@@ -138,7 +142,7 @@ const data = {
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=500x10000:format=jpg/path/sdf5e6942cb755b02/image/ic8b550dc5290a230/version/1536740560/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/bursard/"
   },
-  "Chailloué": {
+  "Chailloue": {
     "population": "920 habitants",
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=320x10000:format=jpg/path/sdf5e6942cb755b02/image/i663106961ff1d200/version/1536754157/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/chaillou%C3%A9/"
@@ -153,12 +157,12 @@ const data = {
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=500x10000:format=jpg/path/sdf5e6942cb755b02/image/i4391e99835c20e30/version/1536841973/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/francheville/"
   },
-  "Macé": {
+  "Mace": {
     "population": "441 habitants",
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=500x10000:format=jpg/path/sdf5e6942cb755b02/image/i3b6f67a44b25f81d/version/1540213248/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/mac%C3%A9/"
   },
-  "Médavy": {
+  "Medavy": {
     "population": "151 habitants",
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=500x10000:format=jpg/path/sdf5e6942cb755b02/image/i50bb4608cfd5825c/version/1537193285/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/m%C3%A9davy/"
@@ -168,7 +172,7 @@ const data = {
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=500x10000:format=jpg/path/sdf5e6942cb755b02/image/if81f8055c2a70f0d/version/1537261947/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/montmerrei/"
   },
-  "Mortrée": {
+  "Mortree": {
     "population": "1100 habitants",
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=505x10000:format=jpg/path/sdf5e6942cb755b02/image/i0745f4107fcf65e2/version/1570797396/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/mortr%C3%A9e/"
@@ -183,7 +187,7 @@ const data = {
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=505x10000:format=jpg/path/sdf5e6942cb755b02/image/i340a1c3749f0bbd5/version/1538397695/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/saint-gervais-du-perron/"
   },
-  "Sées": {
+  "Sees": {
     "population": "4209 habitants",
     "photo": "https://image.jimcdn.com/app/cms/image/transf/dimension=500x10000:format=jpg/path/sdf5e6942cb755b02/image/i3f47455ec77ef748/version/1538051023/image.jpg",
     "page": "https://www.cdc-sourcesdelorne.fr/les-communes/s%C3%A9es/"
@@ -204,7 +208,7 @@ document.querySelectorAll("svg path[id]").forEach(path => {
   path.addEventListener("mousemove", e => {
     tooltip.style.left = e.pageX + 10 + "px";
     tooltip.style.top = e.pageY + 10 + "px";
-    tooltip.innerText = name;
+    tooltip.innerText = name.replace(/_/g, " ");
     tooltip.style.display = "block";
   });
   path.addEventListener("mouseleave", () => {
@@ -213,12 +217,12 @@ document.querySelectorAll("svg path[id]").forEach(path => {
   path.addEventListener("click", () => {
     const info = data[name];
     if (info) {
-      document.getElementById("commune-name").innerText = name;
+      document.getElementById("commune-name").innerText = name.replace(/_/g, " ");
       document.getElementById("commune-name").style.color = "#6b8a2b";
       document.getElementById("commune-description").innerHTML = `
         <span style='color: #333;'>${info.population}</span><br>
         <img src="${info.photo}" alt="photo de la commune">
-        <a class="btn" href="${info.page}" target="_blank">Découvrir la commune</a>
+        <a class="btn" href="${info.page}" >Découvrir la commune</a>
       `;
       document.getElementById("commune-description").classList.remove("placeholder");
     }
